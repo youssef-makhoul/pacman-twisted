@@ -46,6 +46,8 @@ Here, we are going to rewrite the code of this function to actually check if the
 
 If at least one enemy overlaps the player, then your function should return `true`. Otherwise it should return `false.
 
+A good strategy would be to console.log both this.player and this.enemies. When you look in the console, you will see that those two objects contain the information necessary to detect a collision.
+
 As a hint, note that the box of each enemy is defined by its `x` and `y` coordinates and the `ENEMY_WIDTH` and `ENEMY_HEIGHT` constants. There are similar variables for the player.
 
 ### 3. Let's do some refactoring!
