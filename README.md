@@ -77,4 +77,4 @@ Having completed the basic section of this project is already great! However, th
 * **Don't stop!** These suggestions are only here to get you started :)
 
 ### 6. Submission
-Submission to be done before 9PM on Monday. You will make a 30 second recording using OBS. [Instructions on using OBS.](https://docs.google.com/document/d/1ATihbD7BEzqAZoGkZTtZwDHJjTtTkdCEbYTg7eaFnO4/edit?usp=sharing). You will then upload the video on youtube and then place the link in the #cohort-11-oop-videos slack channel. All the videos will be presented by the teacher on Tuesday at 10:00AM. If your video is not in the channel by that time, it will not be presented.
+Submission before 9PM on Monday. You will make a 30 second recording using OBS. [Instructions on using OBS](https://docs.google.com/document/d/1ATihbD7BEzqAZoGkZTtZwDHJjTtTkdCEbYTg7eaFnO4/edit?usp=sharing). You will then upload the video on youtube and then place the link in the #cohort-11-oop-videos slack channel. All the videos will be presented by the teacher on Tuesday starting 10:00AM. If your video link is not in the channel by that time, it will not be presented.
