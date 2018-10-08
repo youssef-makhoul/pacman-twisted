@@ -109,7 +109,7 @@ class Engine {
             this.enemies = [];
         }
 
-        while (this.enemies.filter(e => !!e).length < MAX_ENEMIES) {
+        while (this.enemies.length < MAX_ENEMIES) {
             this.addEnemy();
         }
     }
@@ -172,11 +172,7 @@ class Engine {
         this.player.render(this.ctx); // draw the player
 
         // Check if any enemies should die
-        this.enemies.forEach((enemy, enemyIdx) => {
-            if (enemy.y > GAME_HEIGHT) {
-                delete this.enemies[enemyIdx];
-            }
-        });
+        this.enemies = this.enemies.filter(enemy => enemy.y <= GAME_HEIGHT)
         this.setupEnemies();
 
         // Check if player is dead
