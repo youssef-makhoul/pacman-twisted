@@ -18,8 +18,10 @@ var MOVE_LEFT = 'left';
 var MOVE_RIGHT = 'right';
 
 // Preload game images
+let imageFilenames = ['enemy.png', 'stars.png', 'player.png']
 var images = {};
-['enemy.png', 'stars.png', 'player.png'].forEach(imgName => {
+
+imageFilenames.forEach(function(imgName) {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -131,16 +133,17 @@ class Engine {
     start() {
         this.score = 0;
         this.lastFrame = Date.now();
-
-        // Listen for keyboard left/right and update the player
-        document.addEventListener('keydown', e => {
+        let keydownHandler = function (e) {
             if (e.keyCode === LEFT_ARROW_CODE) {
                 this.player.move(MOVE_LEFT);
             }
             else if (e.keyCode === RIGHT_ARROW_CODE) {
                 this.player.move(MOVE_RIGHT);
             }
-        });
+        }
+        keydownHandler = keydownHandler.bind(this)
+        // Listen for keyboard left/right and update the player
+        document.addEventListener('keydown', keydownHandler);
 
         this.gameLoop();
     }
@@ -164,15 +167,21 @@ class Engine {
         this.score += timeDiff;
 
         // Call update on all enemies
-        this.enemies.forEach(enemy => enemy.update(timeDiff));
+        this.enemies.forEach(function (enemy) { enemy.update(timeDiff) });
 
         // Draw everything!
         this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
-        this.enemies.forEach(enemy => enemy.render(this.ctx)); // draw the enemies
+        let renderEnemy = function(enemy) {
+            enemy.render(this.ctx)
+        }
+        renderEnemy = renderEnemy.bind(this)
+        this.enemies.forEach(renderEnemy); // draw the enemies
         this.player.render(this.ctx); // draw the player
 
         // Check if any enemies should die
-        this.enemies = this.enemies.filter(enemy => enemy.y <= GAME_HEIGHT)
+        this.enemies = this.enemies.filter(function(enemy){
+            return enemy.y <= GAME_HEIGHT
+        })
         this.setupEnemies();
 
         // Check if player is dead
