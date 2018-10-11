@@ -111,7 +111,7 @@ class Engine {
             this.enemies = [];
         }
 
-        while (this.enemies.length < MAX_ENEMIES) {
+        while (this.enemies.filter(function(){return true}).length < MAX_ENEMIES) {
             this.addEnemy();
         }
     }
