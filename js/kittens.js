@@ -179,9 +179,11 @@ class Engine {
         this.player.render(this.ctx); // draw the player
 
         // Check if any enemies should die
-        this.enemies = this.enemies.filter(function(enemy){
-            return enemy.y <= GAME_HEIGHT
-        })
+        this.enemies.forEach((enemy, enemyIdx) => {
+            if (enemy.y > GAME_HEIGHT) {
+                delete this.enemies[enemyIdx];
+            }
+        });
         this.setupEnemies();
 
         // Check if player is dead
