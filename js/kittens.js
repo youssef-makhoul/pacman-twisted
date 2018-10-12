@@ -1,27 +1,30 @@
 // This sectin contains some game constants. It is not super interesting
-var GAME_WIDTH = 375;
-var GAME_HEIGHT = 500;
+let GAME_WIDTH = 375;
+let GAME_HEIGHT = 500;
 
-var ENEMY_WIDTH = 75;
-var ENEMY_HEIGHT = 156;
-var MAX_ENEMIES = 3;
+let ENEMY_WIDTH = 75;
+let ENEMY_HEIGHT = 156;
+let MAX_ENEMIES = 3;
 
-var PLAYER_WIDTH = 75;
-var PLAYER_HEIGHT = 54;
+let PLAYER_WIDTH = 75;
+let PLAYER_HEIGHT = 54;
+
+let RES_BTN_WIDTH = 100;
+let RES_BTN_HEIGHT = 100;
 
 // These two constants keep us from using "magic numbers" in our code
-var LEFT_ARROW_CODE = 37;
-var RIGHT_ARROW_CODE = 39;
+let LEFT_ARROW_CODE = 37;
+let RIGHT_ARROW_CODE = 39;
 
 // These two constants allow us to DRY
-var MOVE_LEFT = 'left';
-var MOVE_RIGHT = 'right';
+let MOVE_LEFT = 'left';
+let MOVE_RIGHT = 'right';
 
 // Preload game images
-let imageFilenames = ['enemy.png', 'stars.png', 'player.png']
-var images = {};
+let imageFilenames = ['enemy.png', 'stars.png', 'player.png', 'restartBtn.png'];
+let images = {};
 
-imageFilenames.forEach(function(imgName) {
+imageFilenames.forEach(function (imgName) {
     var img = document.createElement('img');
     img.src = 'images/' + imgName;
     images[imgName] = img;
@@ -29,53 +32,56 @@ imageFilenames.forEach(function(imgName) {
 
 
 
-
-
 // This section is where you will be doing most of your coding
-class Enemy {
-    constructor(xPos) {
-        this.x = xPos;
-        this.y = -ENEMY_HEIGHT;
-        this.sprite = images['enemy.png'];
-
-        // Each enemy should have a different speed
-        this.speed = Math.random() / 2 + 0.25;
-    }
-
-    update(timeDiff) {
-        this.y = this.y + timeDiff * this.speed;
+class Entity {
+    constructor(x, y, sprite) {
+        this.x = x;
+        this.y = y;
+        this.sprite = sprite;
     }
 
     render(ctx) {
         ctx.drawImage(this.sprite, this.x, this.y);
     }
 }
+class Enemy extends Entity {
+    constructor(xPos) {
+        super(xPos, -ENEMY_HEIGHT, images['enemy.png']);
+        // Each enemy should have a different speed
+        this.speed = Math.random() / 2 + 0.25;
+    }
+    update(timeDiff) {
+        this.y = this.y + timeDiff * this.speed;
+    }
+}
 
-class Player {
+class Player extends Entity {
     constructor() {
-        this.x = 2 * PLAYER_WIDTH;
-        this.y = GAME_HEIGHT - PLAYER_HEIGHT - 10;
-        this.sprite = images['player.png'];
+        super(2 * PLAYER_WIDTH, GAME_HEIGHT - PLAYER_HEIGHT - 10, images['player.png']);
     }
 
     // This method is called by the game engine when left/right arrows are pressed
     move(direction) {
         if (direction === MOVE_LEFT && this.x > 0) {
             this.x = this.x - PLAYER_WIDTH;
-        }
-        else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
+        } else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
             this.x = this.x + PLAYER_WIDTH;
         }
     }
-
-    render(ctx) {
-        ctx.drawImage(this.sprite, this.x, this.y);
-    }
 }
 
-
-
-
+class RestartButton extends Entity {
+    constructor() {
+        super((GAME_WIDTH - RES_BTN_WIDTH) / 2, (GAME_HEIGHT - RES_BTN_WIDTH) / 2, images['restartBtn.png']);
+    }
+    ShowRestartButton(ctx) {
+        this.render(ctx);
+        // Add event listener for `click` events.
+        ctx.canvas.addEventListener('click', function (event) {
+            location.reload();
+        });
+    }
+}
 
 /*
 This section is a tiny game engine.
@@ -89,6 +95,9 @@ class Engine {
 
         // Setup enemies, making sure there are always three
         this.setupEnemies();
+
+
+        this.restartButton = new RestartButton();
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -111,7 +120,9 @@ class Engine {
             this.enemies = [];
         }
 
-        while (this.enemies.filter(function(){return true}).length < MAX_ENEMIES) {
+        while (this.enemies.filter(function () {
+                return true;
+            }).length < MAX_ENEMIES) {
             this.addEnemy();
         }
     }
@@ -122,7 +133,7 @@ class Engine {
 
         var enemySpot;
         // Keep looping until we find a free enemy spot at random
-        while (!enemySpot || this.enemies[enemySpot]) {
+        while (!enemySpot && this.enemies[enemySpot]) {
             enemySpot = Math.floor(Math.random() * enemySpots);
         }
 
@@ -136,12 +147,11 @@ class Engine {
         let keydownHandler = function (e) {
             if (e.keyCode === LEFT_ARROW_CODE) {
                 this.player.move(MOVE_LEFT);
-            }
-            else if (e.keyCode === RIGHT_ARROW_CODE) {
+            } else if (e.keyCode === RIGHT_ARROW_CODE) {
                 this.player.move(MOVE_RIGHT);
             }
-        }
-        keydownHandler = keydownHandler.bind(this)
+        };
+        keydownHandler = keydownHandler.bind(this);
         // Listen for keyboard left/right and update the player
         document.addEventListener('keydown', keydownHandler);
 
@@ -167,14 +177,16 @@ class Engine {
         this.score += timeDiff;
 
         // Call update on all enemies
-        this.enemies.forEach(function (enemy) { enemy.update(timeDiff) });
+        this.enemies.forEach(function (enemy) {
+            enemy.update(timeDiff);
+        });
 
         // Draw everything!
         this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
-        let renderEnemy = function(enemy) {
-            enemy.render(this.ctx)
-        }
-        renderEnemy = renderEnemy.bind(this)
+        let renderEnemy = function (enemy) {
+            enemy.render(this.ctx);
+        };
+        renderEnemy = renderEnemy.bind(this);
         this.enemies.forEach(renderEnemy); // draw the enemies
         this.player.render(this.ctx); // draw the player
 
@@ -192,8 +204,8 @@ class Engine {
             this.ctx.font = 'bold 30px Impact';
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
-        }
-        else {
+            this.restartButton.ShowRestartButton(this.ctx);
+        } else {
             // If player is not dead, then draw the score
             this.ctx.font = 'bold 30px Impact';
             this.ctx.fillStyle = '#ffffff';
@@ -207,11 +219,19 @@ class Engine {
 
     isPlayerDead() {
         // TODO: fix this function!
-        return false;
+        let b = false;
+        this.enemies.forEach(element => {
+            b = b || isOverlap(element, this.player);
+        });
+        return b;
     }
 }
 
-
+let isOverlap = (enemy, player) => {
+    if (enemy.y + ENEMY_HEIGHT >= player.y && player.x === enemy.x)
+        return true;
+    return false;
+};
 
 
 
