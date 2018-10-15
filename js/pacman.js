@@ -4,7 +4,7 @@ let SQUARESCOUNT = 9;
 
 let ENTITY_WIDTH = 75;
 let ENTITY_HEIGHT = 75;
-let MAX_ENTITIES = 3;
+let MAX_ENTITIES = 1;
 let ENTITY_SPEED = 0.05;
 
 let GAME_WIDTH = SQUARESCOUNT * 75;
@@ -13,6 +13,8 @@ let GAME_HEIGHT = SQUARESCOUNT * 75;
 let FOODPOINT_SPEED = 0.25;
 let FOOD_POINT_CHANCE = 6;
 let FOOD_POINT_SCORE = 5000;
+
+let BOX_COUNT = 7;
 
 let PLAYER_WIDTH = 75;
 let PLAYER_HEIGHT = 75;
@@ -33,7 +35,7 @@ let MOVE_RIGHT = 'right';
 let MOVE_UP = 'up';
 let MOVE_DOWN = 'down';
 // Preload game images
-let imageFilenames = ['enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'player2.png', 'restartBtn.png', 'food.png'];
+let imageFilenames = ['box.png', 'enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'restartBtn.png', 'food.png'];
 let images = {};
 
 imageFilenames.forEach(function (imgName) {
@@ -84,6 +86,8 @@ class Player extends Entity {
 
     // This method is called by the game engine when left/right arrows are pressed
     move(direction) {
+        let ox = this.x;
+        let oy = this.y;
         if (direction === MOVE_LEFT && this.x > 0) {
             this.x = this.x - PLAYER_WIDTH;
         } else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
@@ -93,6 +97,12 @@ class Player extends Entity {
         } else if (direction === MOVE_DOWN && this.y < GAME_HEIGHT - PLAYER_HEIGHT) {
             this.y = this.y + PLAYER_HEIGHT;
         }
+        gameEngine.boxes.forEach(box => {
+            if (isOverlap(box, this)) {
+                this.x = ox;
+                this.y = oy;
+            }
+        });
         this.changePlayerImage(direction);
     }
     changePlayerImage(direction) {
@@ -107,6 +117,12 @@ class Player extends Entity {
         if (direction == MOVE_DOWN)
             this.sprite = images['player_down.png'];
 
+    }
+}
+
+class Box extends Entity {
+    constructor(xPos, yPos) {
+        super(xPos * ENTITY_WIDTH, yPos * ENTITY_HEIGHT, images['box.png']);
     }
 }
 
@@ -141,6 +157,23 @@ class FallingEntity extends Entity {
             this.y = this.y - timeDiff * this.speed;
         }
     }
+    changeDirection() {
+        let newDirection = '';
+        if (this.direction == 'up')
+            newDirection = 'right';
+        if (this.direction == 'down')
+            newDirection = 'left';
+        if (this.direction == 'right')
+            newDirection = 'down';
+        if (this.direction == 'left')
+            newDirection = 'up';
+        if (this.x % 1 !== 0)
+            this.x = Math.ceil(Math.round(this.x / ENTITY_WIDTH) * ENTITY_WIDTH);
+        if (this.y % 1 !== 0)
+            this.y = Math.ceil(Math.round(this.y / ENTITY_HEIGHT) * ENTITY_HEIGHT);
+        this.direction = getRandomDirection();
+
+    }
 }
 class Enemy extends FallingEntity {
     constructor(Pos) {
@@ -169,17 +202,25 @@ class RestartButton extends Entity {
         ctx.canvas.addEventListener('click', function (event) {
             location.reload();
         });
+        document.addEventListener('keydown', (e) => {
+            if (e.keyCode == 32)
+                location.reload();
+        });
     }
 }
 
 class Engine {
     constructor(element) {
         this.level = 1;
+
         // Setup the player
         this.player = new Player();
 
         this.setupFallingEntities();
+
         this.restartButton = new RestartButton();
+
+        this.setupBoxes();
 
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
@@ -217,6 +258,19 @@ class Engine {
             this.fallingEntities[entitySpot] = new Enemy(entitySpot);
     }
 
+    setupBoxes() {
+        this.boxes = [];
+        for (let i = 0; i < BOX_COUNT; i++) {
+            let xpos = getRandomInt(1, SQUARESCOUNT - 2);
+            let ypos = getRandomInt(1, SQUARESCOUNT - 2);
+            if (xpos === Math.ceil((SQUARESCOUNT-1) / 2) && ypos === Math.ceil((SQUARESCOUNT-1) / 2)) {
+                i--;
+                continue;
+            }
+            this.boxes.push(new Box(xpos, ypos));
+        }
+    }
+
     // This method kicks off the game
     start() {
         this.score = 0;
@@ -230,7 +284,8 @@ class Engine {
                 this.player.move(MOVE_UP);
             } else if (e.keyCode === DOWN_ARROW_CODE) {
                 this.player.move(MOVE_DOWN);
-            }
+            }else if(e.keyCode === 32)
+                location.reload();
         };
         keydownHandler = keydownHandler.bind(this);
         // Listen for keyboard left/right and update the player
@@ -247,8 +302,9 @@ class Engine {
         // Increase the score!
         this.score += timeDiff;
 
-        if (this.score > this.level * 15000 && ENTITY_SPEED < 1 ){
-            MAX_ENTITIES+=1;
+        //Increase Level
+        if (this.score > this.level * 15000 && ENTITY_SPEED < 1) {
+            MAX_ENTITIES += 1;
             ENTITY_SPEED += 0.05;
             this.level++;
         }
@@ -261,14 +317,18 @@ class Engine {
 
 
         // Draw everything!
-        this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
         let renderEntity = function (entity) {
             entity.render(this.ctx);
         };
         renderEntity = renderEntity.bind(this);
-        this.fallingEntities.forEach(renderEntity); // draw the enemies
-
-        this.player.render(this.ctx); // draw the player
+        // draw the enemies
+        this.ctx.drawImage(images['stars.png'], 0, 0);
+        // draw the enemies
+        this.fallingEntities.forEach(renderEntity);
+        // draw the player
+        this.player.render(this.ctx);
+        //draw boxes
+        this.boxes.forEach(renderEntity);
 
         // Check if any enemies should die
         this.fallingEntities.forEach((entity, entityIdx) => {
@@ -299,6 +359,10 @@ class Engine {
                 this.score += FOOD_POINT_SCORE;
                 delete this.fallingEntities[pointEaten.index];
             }
+            let boxHit = this.isHitBox();
+            if (boxHit.hit) {
+                boxHit.entity.changeDirection();
+            }
             this.ctx.fillText(this.score, 5, 30);
             // Set the time marker and redraw
             this.lastFrame = Date.now();
@@ -306,6 +370,23 @@ class Engine {
         }
     }
 
+    isHitBox() {
+        let boxHit = {
+            hit: false,
+            box: undefined,
+            entity: undefined
+        };
+        this.fallingEntities.forEach(entity => {
+            this.boxes.forEach(box => {
+                if (isOverlap(entity, box)) {
+                    boxHit.hit = true;
+                    boxHit.box = box;
+                    boxHit.entity = entity;
+                }
+            });
+        });
+        return boxHit;
+    }
 
     isPlayerDead() {
         // TODO: fix this function!
@@ -330,17 +411,19 @@ class Engine {
         });
         return foodPoint;
     }
+
 }
 
 let isOverlap = (entity, player) => {
     //direction left / right
-    if (entity.y == player.y && entity.x + ENTITY_WIDTH >= player.x && entity.x <= player.x + PLAYER_WIDTH)
+    if (entity.y === player.y && entity.x + ENTITY_WIDTH > player.x && entity.x < player.x + PLAYER_WIDTH)
         return true;
     //direction top / bottom
-    if (entity.y + ENTITY_HEIGHT >= player.y && entity.y <= player.y + PLAYER_HEIGHT && player.x === entity.x)
+    if (entity.y + ENTITY_HEIGHT > player.y && entity.y < player.y + PLAYER_HEIGHT && player.x === entity.x)
         return true;
     return false;
-};
+}
+
 
 
 
