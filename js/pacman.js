@@ -35,7 +35,7 @@ let MOVE_RIGHT = 'right';
 let MOVE_UP = 'up';
 let MOVE_DOWN = 'down';
 // Preload game images
-let imageFilenames = ['box.png', 'enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'restartBtn.png', 'food.png', 'scared.png'];
+let imageFilenames = ['box.png', 'enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'restartBtn.png', 'food.png', 'scared.png','startBtn.png'];
 let images = {};
 
 imageFilenames.forEach(function (imgName) {
@@ -44,7 +44,6 @@ imageFilenames.forEach(function (imgName) {
     images[imgName] = img;
 });
 
-let pointEatinSound = new Audio('./sounds/PointEaten.mp3');
 
 let soundFilenames = ['end', 'eat_point','background'];
 let sounds = {};
@@ -225,19 +224,15 @@ class RestartButton extends Entity {
     }
 }
 
+class StartButton extends Entity {
+    constructor() {
+        super((GAME_WIDTH - START_BTN_WIDTH) / 2, (GAME_HEIGHT - START_BTN_HEIGHT) / 2, images['startBtn.png']);
+    }
+}
+
 class Engine {
     constructor(element) {
         this.level = 1;
-
-        // Setup the player
-        this.player = new Player();
-
-        this.setupFallingEntities();
-
-        this.restartButton = new RestartButton();
-
-        this.setupBoxes();
-
         // Setup the <canvas> element where we will be drawing
         var canvas = document.createElement('canvas');
         canvas.width = GAME_WIDTH;
@@ -289,6 +284,11 @@ class Engine {
 
     // This method kicks off the game
     start() {
+        // Setup the player
+        this.player = new Player();
+        this.setupFallingEntities();
+        this.setupBoxes();
+        this.restartButton = new RestartButton();
         this.score = 0;
         this.lastFrame = Date.now();
         let keydownHandler = function (e) {

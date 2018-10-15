@@ -1,3 +1,11 @@
 #app{
     text-align: center;
 }
+body{
+    background-color: black;
+    
+}
+footer{
+    color: white;
+    float: right;
+}
