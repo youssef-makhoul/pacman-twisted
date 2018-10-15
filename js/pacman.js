@@ -239,16 +239,6 @@ class Engine {
         this.gameLoop();
     }
 
-    /*
-    This is the core of the game engine. The `gameLoop` function gets called ~60 times per second
-    During each execution of the function, we will update the positions of all game entities
-    It's also at this point that we will check for any collisions between the game entities
-    Collisions will often indicate either a player death or an enemy kill
-
-    In order to allow the game objects to self-determine their behaviors, gameLoop will call the `update` method of each entity
-    To account for the fact that we don't always have 60 frames per second, gameLoop will send a time delta argument to `update`
-    You should use this parameter to scale your update appropriately
-     */
     gameLoop() {
         // Check how long it's been since last frame
         var currentFrame = Date.now();
