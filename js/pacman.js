@@ -4,7 +4,7 @@ let SQUARESCOUNT = 9;
 
 let ENTITY_WIDTH = 75;
 let ENTITY_HEIGHT = 75;
-let MAX_ENTITIES = 3;
+let MAX_ENTITIES = 0;
 let ENTITY_SPEED = 0.05;
 
 let GAME_WIDTH = SQUARESCOUNT * 75;
@@ -35,7 +35,7 @@ let MOVE_RIGHT = 'right';
 let MOVE_UP = 'up';
 let MOVE_DOWN = 'down';
 // Preload game images
-let imageFilenames = ['box.png', 'enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'restartBtn.png', 'food.png', 'scared.png','startBtn.png'];
+let imageFilenames = ['box.png', 'enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'restartBtn.png', 'food.png', 'scared.png', 'startBtn.png'];
 let images = {};
 
 imageFilenames.forEach(function (imgName) {
@@ -45,7 +45,7 @@ imageFilenames.forEach(function (imgName) {
 });
 
 
-let soundFilenames = ['end', 'eat_point','background'];
+let soundFilenames = ['end', 'eat_point', 'background'];
 let sounds = {};
 
 soundFilenames.forEach(function (soundName) {
@@ -94,15 +94,35 @@ class Player extends Entity {
     move(direction) {
         let ox = this.x;
         let oy = this.y;
-        if (direction === MOVE_LEFT && this.x > 0) {
-            this.x = this.x - PLAYER_WIDTH;
-        } else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
-            this.x = this.x + PLAYER_WIDTH;
-        } else if (direction === MOVE_UP && this.y >= PLAYER_HEIGHT) {
-            this.y = this.y - PLAYER_HEIGHT;
-        } else if (direction === MOVE_DOWN && this.y < GAME_HEIGHT - PLAYER_HEIGHT) {
-            this.y = this.y + PLAYER_HEIGHT;
+
+        if (direction === MOVE_LEFT) {
+            if (this.x > 0)
+                this.x = this.x - PLAYER_WIDTH;
+            else
+                this.x = GAME_WIDTH - PLAYER_WIDTH;
         }
+
+        if (direction === MOVE_RIGHT) {
+            if (this.x < GAME_WIDTH - PLAYER_WIDTH)
+                this.x = this.x + PLAYER_WIDTH;
+            else
+                this.x = 0;
+        }
+
+        if (direction === MOVE_UP) {
+            if (this.y >= PLAYER_HEIGHT)
+                this.y = this.y - PLAYER_HEIGHT;
+            else
+                this.y = GAME_WIDTH - PLAYER_HEIGHT;
+        }
+
+        if (direction === MOVE_DOWN) {
+            if (this.y < GAME_HEIGHT - PLAYER_HEIGHT)
+                this.y = this.y + PLAYER_HEIGHT;
+            else
+                this.y = 0;
+        }
+
         gameEngine.boxes.forEach(box => {
             if (isOverlap(box, this)) {
                 this.x = ox;
