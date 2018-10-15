@@ -4,7 +4,7 @@ let SQUARESCOUNT = 9;
 
 let ENTITY_WIDTH = 75;
 let ENTITY_HEIGHT = 75;
-let MAX_ENTITIES = 1;
+let MAX_ENTITIES = 3;
 let ENTITY_SPEED = 0.05;
 
 let GAME_WIDTH = SQUARESCOUNT * 75;
@@ -35,7 +35,7 @@ let MOVE_RIGHT = 'right';
 let MOVE_UP = 'up';
 let MOVE_DOWN = 'down';
 // Preload game images
-let imageFilenames = ['box.png', 'enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'restartBtn.png', 'food.png'];
+let imageFilenames = ['box.png', 'enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'restartBtn.png', 'food.png', 'scared.png'];
 let images = {};
 
 imageFilenames.forEach(function (imgName) {
@@ -44,8 +44,15 @@ imageFilenames.forEach(function (imgName) {
     images[imgName] = img;
 });
 
-let gameEndSound = new Audio('./sounds/GameEnd.mp3');
 let pointEatinSound = new Audio('./sounds/PointEaten.mp3');
+
+let soundFilenames = ['end', 'eat_point','background'];
+let sounds = {};
+
+soundFilenames.forEach(function (soundName) {
+    let sound = new Audio('./sounds/' + soundName + '.mp3');
+    sounds[soundName] = sound;
+});
 
 
 
@@ -180,13 +187,21 @@ class Enemy extends FallingEntity {
         super(images['enemy' + getRandomInt(1, 4).toString() + '.png'], Pos);
         // Each enemy should have a different speed
         this.speed = Math.random() / 2 + ENTITY_SPEED;
+        this.scared = false;
+    }
+    changeScared(scared) {
+        this.scared = scared;
+        if (scared) {
+            this.sprite = images['scared.png'];
+        }
     }
 
 }
 class FoodPoint extends FallingEntity {
     constructor(Pos) {
         super(images['food.png'], Pos);
-        this.speed = Math.random() / 2 + FOODPOINT_SPEED;
+        //this.speed = Math.random() / 2 + FOODPOINT_SPEED;
+        this.speed = FOODPOINT_SPEED;
     }
 }
 
@@ -198,7 +213,8 @@ class RestartButton extends Entity {
     }
     ShowRestartButton(ctx) {
         this.render(ctx);
-        gameEndSound.play();
+        sounds.background.pause();
+        sounds.end.play();
         ctx.canvas.addEventListener('click', function (event) {
             location.reload();
         });
@@ -263,7 +279,7 @@ class Engine {
         for (let i = 0; i < BOX_COUNT; i++) {
             let xpos = getRandomInt(1, SQUARESCOUNT - 2);
             let ypos = getRandomInt(1, SQUARESCOUNT - 2);
-            if (xpos === Math.ceil((SQUARESCOUNT-1) / 2) && ypos === Math.ceil((SQUARESCOUNT-1) / 2)) {
+            if (xpos === Math.ceil((SQUARESCOUNT - 1) / 2) && ypos === Math.ceil((SQUARESCOUNT - 1) / 2)) {
                 i--;
                 continue;
             }
@@ -284,13 +300,13 @@ class Engine {
                 this.player.move(MOVE_UP);
             } else if (e.keyCode === DOWN_ARROW_CODE) {
                 this.player.move(MOVE_DOWN);
-            }else if(e.keyCode === 32)
+            } else if (e.keyCode === 32)
                 location.reload();
         };
         keydownHandler = keydownHandler.bind(this);
         // Listen for keyboard left/right and update the player
         document.addEventListener('keydown', keydownHandler);
-
+        sounds.background.play();
         this.gameLoop();
     }
 
@@ -303,7 +319,7 @@ class Engine {
         this.score += timeDiff;
 
         //Increase Level
-        if (this.score > this.level * 15000 && ENTITY_SPEED < 1) {
+        if (this.score > this.level * 20000 && ENTITY_SPEED < 1) {
             MAX_ENTITIES += 1;
             ENTITY_SPEED += 0.05;
             this.level++;
@@ -340,13 +356,24 @@ class Engine {
         this.setupFallingEntities();
 
         // Check if player is dead
-        if (this.isPlayerDead()) {
-            // If they are dead, then it's game over!
-            this.ctx.font = 'bold 30px Impact';
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
-            this.restartButton.ShowRestartButton(this.ctx);
-            return;
+        let hit = this.isPlayerDead();
+        if (hit.hit) {
+            if (hit.entity.scared) {
+                sounds.eat_point.play();
+                this.ctx.fillStyle = '#00ff00';
+                this.score += FOOD_POINT_SCORE;
+                delete this.fallingEntities[hit.index];
+                this.ctx.fillText(this.score, 5, 30);
+                // Set the time marker and redraw
+                this.lastFrame = Date.now();
+                requestAnimationFrame(this.gameLoop);
+            } else {
+                this.ctx.font = 'bold 30px Impact';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillText(this.score + ' GAME OVER', 5, 30);
+                this.restartButton.ShowRestartButton(this.ctx);
+                return;
+            }
 
         } else {
             // If player is not dead, then draw the score
@@ -354,10 +381,14 @@ class Engine {
             this.ctx.fillStyle = '#ffffff';
             let pointEaten = this.EatenPoint();
             if (pointEaten.eaten) {
-                pointEatinSound.play();
+                sounds.eat_point.play();
                 this.ctx.fillStyle = '#00ff00';
                 this.score += FOOD_POINT_SCORE;
                 delete this.fallingEntities[pointEaten.index];
+                this.fallingEntities.forEach(entity => {
+                    if (entity instanceof Enemy)
+                        entity.changeScared(true);
+                });
             }
             let boxHit = this.isHitBox();
             if (boxHit.hit) {
@@ -390,10 +421,16 @@ class Engine {
 
     isPlayerDead() {
         // TODO: fix this function!
-        let b = false;
-        this.fallingEntities.forEach(element => {
+        let b = {
+            hit: false,
+            entity: undefined,
+            index: undefined
+        };
+        this.fallingEntities.forEach((element, index) => {
             if (isOverlap(element, this.player) && element instanceof Enemy) {
-                b = true;
+                b.hit = true;
+                b.entity = element;
+                b.index = index;
             }
         });
         return b;
