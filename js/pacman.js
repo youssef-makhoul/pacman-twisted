@@ -1,11 +1,18 @@
 // This sectin contains some game constants. It is not super interesting
-let GAME_WIDTH = 375;
-let GAME_HEIGHT = 500;
+let SQUARESCOUNT = 9;
 
-let ENEMY_WIDTH = 75;
-let ENEMY_HEIGHT = 72;
-let MAX_ENEMIES = 3;
-let ENEMY_SPEED = 0.25;
+
+let ENTITY_WIDTH = 75;
+let ENTITY_HEIGHT = 75;
+let MAX_ENTITIES = 3;
+let ENTITY_SPEED = 0.05;
+
+let GAME_WIDTH = SQUARESCOUNT * 75;
+let GAME_HEIGHT = SQUARESCOUNT * 75;
+
+let FOODPOINT_SPEED = 0.25;
+let FOOD_POINT_CHANCE = 6;
+let FOOD_POINT_SCORE = 5000;
 
 let PLAYER_WIDTH = 75;
 let PLAYER_HEIGHT = 75;
@@ -13,21 +20,20 @@ let PLAYER_HEIGHT = 75;
 let RES_BTN_WIDTH = 200;
 let RES_BTN_HEIGHT = 182;
 
-let FOODPOINT_WIDTH = 75;
-let FOODPOINT_HEIGHT = 13;
-let MAX_FOODPOINTS = 1;
-let FOODPOINT_SPEED = 0.25;
 
 // These two constants keep us from using "magic numbers" in our code
 let LEFT_ARROW_CODE = 37;
 let RIGHT_ARROW_CODE = 39;
+let UP_ARROW_CODE = 38;
+let DOWN_ARROW_CODE = 40;
 
 // These two constants allow us to DRY
 let MOVE_LEFT = 'left';
 let MOVE_RIGHT = 'right';
-
+let MOVE_UP = 'up';
+let MOVE_DOWN = 'down';
 // Preload game images
-let imageFilenames = ['enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player1.png', 'player2.png', 'restartBtn.png', 'food.png'];
+let imageFilenames = ['enemy1.png', 'enemy2.png', 'enemy3.png', 'enemy4.png', 'stars.png', 'player_up.png', 'player_down.png', 'player_right.png', 'player_left.png', 'player2.png', 'restartBtn.png', 'food.png'];
 let images = {};
 
 imageFilenames.forEach(function (imgName) {
@@ -47,6 +53,18 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive 
 }
 
+function getRandomDirection() {
+    let dirNum = getRandomInt(1, 4);
+    if (dirNum == 2)
+        return 'right';
+    if (dirNum == 3)
+        return 'left';
+    if (dirNum == 4)
+        return 'down';
+    return 'up';
+
+}
+
 // This section is where you will be doing most of your coding
 class Entity {
     constructor(x, y, sprite) {
@@ -59,20 +77,9 @@ class Entity {
         ctx.drawImage(this.sprite, this.x, this.y);
     }
 }
-class Enemy extends Entity {
-    constructor(xPos) {
-        super(xPos, -ENEMY_HEIGHT, images['enemy' + getRandomInt(1, 4).toString() + '.png']);
-        // Each enemy should have a different speed
-        this.speed = Math.random() / 2 + ENEMY_SPEED;
-    }
-    update(timeDiff) {
-        this.y = this.y + timeDiff * this.speed;
-    }
-}
-
 class Player extends Entity {
     constructor() {
-        super(2 * PLAYER_WIDTH, GAME_HEIGHT - PLAYER_HEIGHT, images['player1.png']);
+        super(4 * PLAYER_WIDTH, GAME_HEIGHT - 5 * PLAYER_HEIGHT, images['player_right.png']);
     }
 
     // This method is called by the game engine when left/right arrows are pressed
@@ -81,13 +88,80 @@ class Player extends Entity {
             this.x = this.x - PLAYER_WIDTH;
         } else if (direction === MOVE_RIGHT && this.x < GAME_WIDTH - PLAYER_WIDTH) {
             this.x = this.x + PLAYER_WIDTH;
+        } else if (direction === MOVE_UP && this.y >= PLAYER_HEIGHT) {
+            this.y = this.y - PLAYER_HEIGHT;
+        } else if (direction === MOVE_DOWN && this.y < GAME_HEIGHT - PLAYER_HEIGHT) {
+            this.y = this.y + PLAYER_HEIGHT;
+        }
+        this.changePlayerImage(direction);
+    }
+    changePlayerImage(direction) {
+        if (direction == MOVE_LEFT)
+            this.sprite = images['player_left.png'];
+        if (direction == MOVE_RIGHT)
+            this.sprite = images['player_right.png'];
+
+        if (direction == MOVE_UP)
+            this.sprite = images['player_up.png'];
+
+        if (direction == MOVE_DOWN)
+            this.sprite = images['player_down.png'];
+
+    }
+}
+
+
+class FallingEntity extends Entity {
+    constructor(sprite, Pos) {
+        super(0, 0, sprite);
+        this.direction = getRandomDirection();
+        if (this.direction == 'left') {
+            this.x = -ENTITY_WIDTH;
+            this.y = Pos * ENTITY_WIDTH;
+        } else if (this.direction == 'right') {
+            this.x = GAME_WIDTH;
+            this.y = Pos * ENTITY_HEIGHT;
+        } else if (this.direction == 'up') {
+            this.x = Pos * ENTITY_WIDTH;
+            this.y = -ENTITY_HEIGHT;
+        } else if (this.direction == 'down') {
+            this.x = Pos * ENTITY_WIDTH;
+            this.y = GAME_HEIGHT;
+        }
+    }
+    update(timeDiff) {
+        //this.y = this.y + timeDiff * this.speed;
+        if (this.direction == 'left') {
+            this.x = this.x + timeDiff * this.speed;
+        } else if (this.direction == 'right') {
+            this.x = this.x - (timeDiff * this.speed);
+        } else if (this.direction == 'up') {
+            this.y = this.y + timeDiff * this.speed;
+        } else if (this.direction == 'down') {
+            this.y = this.y - timeDiff * this.speed;
         }
     }
 }
+class Enemy extends FallingEntity {
+    constructor(Pos) {
+        super(images['enemy' + getRandomInt(1, 4).toString() + '.png'], Pos);
+        // Each enemy should have a different speed
+        this.speed = Math.random() / 2 + ENTITY_SPEED;
+    }
+
+}
+class FoodPoint extends FallingEntity {
+    constructor(Pos) {
+        super(images['food.png'], Pos);
+        this.speed = Math.random() / 2 + FOODPOINT_SPEED;
+    }
+}
+
 
 class RestartButton extends Entity {
     constructor() {
         super((GAME_WIDTH - RES_BTN_WIDTH) / 2, (GAME_HEIGHT - RES_BTN_WIDTH) / 2, images['restartBtn.png']);
+        this.speed = 0;
     }
     ShowRestartButton(ctx) {
         this.render(ctx);
@@ -98,34 +172,13 @@ class RestartButton extends Entity {
     }
 }
 
-class FoodPoint extends Entity {
-    constructor(xPos) {
-        super(xPos, -ENEMY_HEIGHT, images['food.png']);
-        // Each enemy should have a different speed
-        this.speed = Math.random() / 2 + FOODPOINT_SPEED;
-    }
-    update(timeDiff) {
-        this.y = this.y + timeDiff * this.speed;
-    }
-}
-
-
-
-/*
-This section is a tiny game engine.
-This engine will use your Enemy and Player classes to create the behavior of the game.
-The engine will try to draw your game at 60 frames per second using the requestAnimationFrame function
-*/
 class Engine {
     constructor(element) {
+        this.level = 1;
         // Setup the player
         this.player = new Player();
 
-        // Setup enemies, making sure there are always three
-        this.setupEnemies();
-        this.setupFoodPoints();
-
-
+        this.setupFallingEntities();
         this.restartButton = new RestartButton();
 
         // Setup the <canvas> element where we will be drawing
@@ -139,58 +192,29 @@ class Engine {
         // Since gameLoop will be called out of context, bind it once here.
         this.gameLoop = this.gameLoop.bind(this);
     }
-
-    /*
-     The game allows for 5 horizontal slots where an enemy can be present.
-     At any point in time there can be at most MAX_ENEMIES enemies otherwise the game would be impossible
-     */
-    setupEnemies() {
-        if (!this.enemies) {
-            this.enemies = [];
+    setupFallingEntities() {
+        if (!this.fallingEntities) {
+            this.fallingEntities = [];
         }
 
-        while (this.enemies.filter(function () {
+        while (this.fallingEntities.filter(function () {
                 return true;
-            }).length < MAX_ENEMIES) {
-            this.addEnemy();
-        }
-    }
-
-    setupFoodPoints() {
-        if (!this.foodPoints) {
-            this.foodPoints = [];
-        }
-
-        while (this.foodPoints.filter(function () {
-                return true;
-            }).length < MAX_FOODPOINTS) {
-            this.addFoodPoint();
+            }).length < MAX_ENTITIES) {
+            this.addFallingEntity();
         }
     }
 
     // This method finds a random spot where there is no enemy, and puts one in there
-    addEnemy() {
-        var enemySpots = GAME_WIDTH / ENEMY_WIDTH;
-
-        var enemySpot;
+    addFallingEntity() {
+        var entitySpot;
         // Keep looping until we find a free enemy spot at random
-        while (!enemySpot && this.enemies[enemySpot]) {
-            enemySpot = Math.floor(Math.random() * enemySpots);
+        while (entitySpot === false || this.fallingEntities[entitySpot]) {
+            entitySpot = getRandomInt(1, 9);
         }
-
-        this.enemies[enemySpot] = new Enemy(enemySpot * ENEMY_WIDTH);
-    }
-
-    addFoodPoint() {
-        var foodPoints = GAME_WIDTH / FOODPOINT_WIDTH;
-
-        var FoodSpot;
-        // Keep looping until we find a free enemy spot at random
-        while (!FoodSpot && this.foodPoints[FoodSpot]) {
-            FoodSpot = Math.floor(Math.random() * foodPoints);
-        }
-
-        this.foodPoints[FoodSpot] = new FoodPoint(FoodSpot * FOODPOINT_WIDTH);
+        if (getRandomInt(1, FOOD_POINT_CHANCE) == 1)
+            this.fallingEntities[entitySpot] = new FoodPoint(entitySpot);
+        else
+            this.fallingEntities[entitySpot] = new Enemy(entitySpot);
     }
 
     // This method kicks off the game
@@ -202,6 +226,10 @@ class Engine {
                 this.player.move(MOVE_LEFT);
             } else if (e.keyCode === RIGHT_ARROW_CODE) {
                 this.player.move(MOVE_RIGHT);
+            } else if (e.keyCode === UP_ARROW_CODE) {
+                this.player.move(MOVE_UP);
+            } else if (e.keyCode === DOWN_ARROW_CODE) {
+                this.player.move(MOVE_DOWN);
             }
         };
         keydownHandler = keydownHandler.bind(this);
@@ -229,48 +257,37 @@ class Engine {
         // Increase the score!
         this.score += timeDiff;
 
+        if (this.score > this.level * 15000 && ENTITY_SPEED < 1 ){
+            MAX_ENTITIES+=1;
+            ENTITY_SPEED += 0.05;
+            this.level++;
+        }
+
+
         // Call update on all enemies
-        this.enemies.forEach(function (enemy) {
-            enemy.update(timeDiff);
+        this.fallingEntities.forEach(function (entity) {
+            entity.update(timeDiff);
         });
 
-        //Call update on all foodPoints
-        this.foodPoints.forEach(function (foodPoint) {
-            foodPoint.update(timeDiff);
-        });
 
         // Draw everything!
         this.ctx.drawImage(images['stars.png'], 0, 0); // draw the star bg
-        let renderEnemy = function (enemy) {
-            enemy.render(this.ctx);
+        let renderEntity = function (entity) {
+            entity.render(this.ctx);
         };
-        renderEnemy = renderEnemy.bind(this);
-        this.enemies.forEach(renderEnemy); // draw the enemies
-
-
-        let renderFoodPoints = function (foodPoint) {
-            foodPoint.render(this.ctx);
-        };
-        renderFoodPoints = renderFoodPoints.bind(this);
-        this.foodPoints.forEach(renderFoodPoints); // draw the FoodPoints
+        renderEntity = renderEntity.bind(this);
+        this.fallingEntities.forEach(renderEntity); // draw the enemies
 
         this.player.render(this.ctx); // draw the player
 
         // Check if any enemies should die
-        this.enemies.forEach((enemy, enemyIdx) => {
-            if (enemy.y > GAME_HEIGHT) {
-                delete this.enemies[enemyIdx];
+        this.fallingEntities.forEach((entity, entityIdx) => {
+            if (entity.y > GAME_HEIGHT || entity.x > GAME_WIDTH || entity.x < -ENTITY_WIDTH || entity.y < -ENTITY_HEIGHT) {
+                delete this.fallingEntities[entityIdx];
             }
         });
-        this.setupEnemies();
 
-        // Check if any foodpoint should die
-        this.foodPoints.forEach((foodpoint, foodpointIdx) => {
-            if (foodpoint.y > GAME_HEIGHT) {
-                delete this.foodPoints[foodpointIdx];
-            }
-        });
-        this.setupFoodPoints();
+        this.setupFallingEntities();
 
         // Check if player is dead
         if (this.isPlayerDead()) {
@@ -289,8 +306,8 @@ class Engine {
             if (pointEaten.eaten) {
                 pointEatinSound.play();
                 this.ctx.fillStyle = '#00ff00';
-                this.score += 2000;
-                delete this.foodPoints[pointEaten.index];
+                this.score += FOOD_POINT_SCORE;
+                delete this.fallingEntities[pointEaten.index];
             }
             this.ctx.fillText(this.score, 5, 30);
             // Set the time marker and redraw
@@ -303,8 +320,8 @@ class Engine {
     isPlayerDead() {
         // TODO: fix this function!
         let b = false;
-        this.enemies.forEach(element => {
-            if (isOverlap(element, this.player)) {
+        this.fallingEntities.forEach(element => {
+            if (isOverlap(element, this.player) && element instanceof Enemy) {
                 b = true;
             }
         });
@@ -315,8 +332,8 @@ class Engine {
             eaten: false,
             index: 0
         };
-        this.foodPoints.forEach((element, index) => {
-            if (isOverlap(element, this.player)) {
+        this.fallingEntities.forEach((element, index) => {
+            if (isOverlap(element, this.player) && element instanceof FoodPoint) {
                 foodPoint.eaten = true;
                 foodPoint.index = index;
             }
@@ -326,7 +343,11 @@ class Engine {
 }
 
 let isOverlap = (entity, player) => {
-    if (entity.y + ENEMY_HEIGHT >= player.y && player.x === entity.x)
+    //direction left / right
+    if (entity.y == player.y && entity.x + ENTITY_WIDTH >= player.x && entity.x <= player.x + PLAYER_WIDTH)
+        return true;
+    //direction top / bottom
+    if (entity.y + ENTITY_HEIGHT >= player.y && entity.y <= player.y + PLAYER_HEIGHT && player.x === entity.x)
         return true;
     return false;
 };
@@ -336,16 +357,3 @@ let isOverlap = (entity, player) => {
 // This section will start the game
 var gameEngine = new Engine(document.getElementById('app'));
 gameEngine.start();
-
-let bb = false;
-let changePlayerImage = () => {
-    if (bb) {
-        gameEngine.player.sprite = images['player1.png'];
-        bb = false;
-    } else {
-        gameEngine.player.sprite = images['player2.png'];
-        bb = true;
-    }
-    setTimeout(changePlayerImage, 200);
-};
-changePlayerImage();
