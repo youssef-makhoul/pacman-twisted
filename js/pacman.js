@@ -4,15 +4,15 @@ let SQUARESCOUNT = 9;
 
 let ENTITY_WIDTH = 75;
 let ENTITY_HEIGHT = 75;
-let MAX_ENTITIES = 0;
-let ENTITY_SPEED = 0.05;
+let MAX_ENTITIES = 2;
+let ENTITY_SPEED = 0.15;
 
 let GAME_WIDTH = SQUARESCOUNT * 75;
 let GAME_HEIGHT = SQUARESCOUNT * 75;
 
 let FOODPOINT_SPEED = 0.25;
 let FOOD_POINT_CHANCE = 6;
-let FOOD_POINT_SCORE = 5000;
+let FOOD_POINT_SCORE = 2000;
 
 let BOX_COUNT = 7;
 
@@ -70,8 +70,9 @@ function getRandomDirection() {
     if (dirNum == 4)
         return 'down';
     return 'up';
-
 }
+
+
 
 // This section is where you will be doing most of your coding
 class Entity {
@@ -339,7 +340,7 @@ class Engine {
         this.score += timeDiff;
 
         //Increase Level
-        if (this.score > this.level * 20000 && ENTITY_SPEED < 1) {
+        if (this.score > this.level * 15000 && ENTITY_SPEED < 1) {
             MAX_ENTITIES += 1;
             ENTITY_SPEED += 0.05;
             this.level++;
